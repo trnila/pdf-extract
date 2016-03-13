@@ -5,6 +5,7 @@
 #include <wait.h>
 #include "patterns.h"
 #include "split.h"
+#include "pdf2text.h"
 
 int main(int argc, char **argv) {
 	if(argc != 3) {
@@ -15,28 +16,17 @@ int main(int argc, char **argv) {
 	const char* input = argv[1];
 	const char* output = argv[2];
 
-	int pipes[2];
-	pipe(pipes);
-	if(fork() == 0) {
-		close(pipes[0]);
+	int fd = pdf2text(input);
 
-		dup2(pipes[1], 1);
-
-		execlp("pdftotext", "pdftotext", input, "-", NULL);
-		perror("execl: ");
-		exit(1);
-	}
-	close(pipes[1]);
-
-	pattern_add("logika");
+	pattern_add("Definice");
 	Split split;
 	split_init(&split, input);
 
 	char buffer[30];
-	int page = 0;
+	int page = 1;
 	ssize_t r;
 	const char *match;
-	while((r = read(pipes[0], buffer, sizeof(buffer))) > 0) {
+	while((r = read(fd, buffer, sizeof(buffer))) > 0) {
 		for(int i = 0; i < r; i++) {
 			if(buffer[i] == '\f') {
 				page++;

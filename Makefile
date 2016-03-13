@@ -2,7 +2,7 @@ BINARY=extract
 
 all: $(BINARY)
 
-$(BINARY): main.c patterns.c split.c
+$(BINARY): main.o patterns.o split.o pdf2text.o
 	gcc $^ -o $@ -g
 
 .PHONY: clean
