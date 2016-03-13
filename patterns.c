@@ -22,6 +22,7 @@ void pattern_add(char *pattern) {
 
 	(*pat)->pos = 0;
 	(*pat)->length = strlen(pattern);
+	(*pat)->next = NULL;
 
 	(*pat)->pattern = (char*) malloc(((*pat)->length + 1) * sizeof(char));
 	memcpy((*pat)->pattern, pattern, (*pat)->length + 1);
@@ -53,5 +54,19 @@ void pattern_reset() {
 	while(pattern != NULL) {
 		pattern->pos = 0;
 		pattern = pattern->next;
+	}
+}
+
+void pattern_free() {
+	Pattern *pat = root;
+	while(pat != NULL) {
+		if(pat->pattern) {
+			free(pat->pattern);
+		}
+
+		Pattern *current = pat;
+		pat = current->next;
+
+		free(current);
 	}
 }

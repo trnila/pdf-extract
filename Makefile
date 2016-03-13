@@ -1,9 +1,12 @@
 BINARY=extract
 
+CC=gcc
+CFLAGS=-g -Wall -Wextra
+
 all: $(BINARY)
 
 $(BINARY): main.o patterns.o split.o pdf2text.o
-	gcc $^ -o $@ -g
+	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
 
 .PHONY: clean
 clean:

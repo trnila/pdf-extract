@@ -42,5 +42,8 @@ int main(int argc, char **argv) {
 	split_split(&split, output);
 
 	while(wait(NULL) > 0);
+
+	pattern_free();
+	split_free(&split);
 	return 0;
 }
