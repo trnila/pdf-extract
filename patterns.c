@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <memory.h>
+#include <ctype.h>
 #include "patterns.h"
 
 typedef struct Pattern {
@@ -26,6 +27,13 @@ void pattern_add(char *pattern) {
 
 	(*pat)->pattern = (char*) malloc(((*pat)->length + 1) * sizeof(char));
 	memcpy((*pat)->pattern, pattern, (*pat)->length + 1);
+
+	// strtolower
+	for(int i = 0; i < (*pat)->length; i++) {
+		if(isalpha((*pat)->pattern[i])) {
+			(*pat)->pattern[i] = (char) tolower((*pat)->pattern[i]);
+		}
+	}
 }
 
 const char* pattern_any_match(char letter) {

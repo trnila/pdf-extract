@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <wait.h>
 #include <getopt.h>
+#include <ctype.h>
 #include "patterns.h"
 #include "split.h"
 #include "pdf2text.h"
@@ -60,7 +61,7 @@ int main(int argc, char **argv) {
 				page++;
 				log_debug("Page %d\n", page);
 				pattern_reset();
-			} else if((match = pattern_any_match(buffer[i])) != NULL) {
+			} else if(isalpha(buffer[i]) && (match = pattern_any_match((char) tolower(buffer[i]))) != NULL) {
 				log_debug("Match of %s found\n", match);
 				split_addpage(&split, page);
 			}
