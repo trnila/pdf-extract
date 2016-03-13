@@ -3,22 +3,40 @@
 #include <string.h>
 #include <stdio.h>
 #include <wait.h>
+#include <getopt.h>
 #include "patterns.h"
 #include "split.h"
 #include "pdf2text.h"
+#include "log.h"
 
 int main(int argc, char **argv) {
-	if(argc != 3) {
-		printf("Usage: %s input.pdf output.pdf\n", argv[0]);
-		return 1;
+	int c;
+	while ((c = getopt (argc, argv, "w:v")) != -1) {
+		switch (c) {
+			case 'v':
+				verbosity++;
+				break;
+			case 'w':
+				pattern_add(optarg);
+				log_debug("Adding word %s\n", optarg);
+				break;
+			case '?':
+				log_debug("Unknown option `-%c'.\n", optopt);
+				return EXIT_FAILURE;
+			default:
+				abort();
+		}
 	}
-	
-	const char* input = argv[1];
-	const char* output = argv[2];
+
+	if(argc - optind != 2) {
+		printf("Usage: %s input.pdf output.pdf\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	const char* input = argv[optind];
+	const char* output = argv[optind + 1];
 
 	int fd = pdf2text(input);
-
-	pattern_add("Definice");
 	Split split;
 	split_init(&split, input);
 
@@ -30,10 +48,10 @@ int main(int argc, char **argv) {
 		for(int i = 0; i < r; i++) {
 			if(buffer[i] == '\f') {
 				page++;
-				printf("Page %d\n", page);
+				log_debug("Page %d\n", page);
 				pattern_reset();
 			} else if((match = pattern_any_match(buffer[i])) != NULL) {
-				printf("Any match! %s\n", match);
+				log_debug("Match of %s found\n", match);
 				split_addpage(&split, page);
 			}
 		}

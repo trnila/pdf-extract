@@ -30,8 +30,6 @@ void split_split(Split *split, const char *out) {
 	}
 	buffer[pos-1] = '\0';
 
-	printf("===%s====\n", buffer);
-
 	if(fork() == 0) {
 		execlp("pdfjam", "pdfjam", "--fitpaper", "true", split->file, buffer, "-o", out, NULL);
 		perror("execl: ");
