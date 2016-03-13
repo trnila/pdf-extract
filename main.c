@@ -9,9 +9,16 @@
 #include "pdf2text.h"
 #include "log.h"
 
+void printHelp(const char* programName) {
+	printf("Usage: %s input.pdf output.pdf\n", programName);
+	printf("  -h       show this help\n");
+	printf("  -v       raise verbosity level, -v -v -v is max debug verbosity\n");
+	printf("  -w word  add word to the list of searching patterns\n");
+}
+
 int main(int argc, char **argv) {
 	int c;
-	while ((c = getopt (argc, argv, "w:v")) != -1) {
+	while ((c = getopt (argc, argv, "w:vh")) != -1) {
 		switch (c) {
 			case 'v':
 				verbosity++;
@@ -20,6 +27,9 @@ int main(int argc, char **argv) {
 				pattern_add(optarg);
 				log_debug("Adding word %s\n", optarg);
 				break;
+			case 'h':
+				printHelp(argv[0]);
+				return EXIT_SUCCESS;
 			case '?':
 				log_debug("Unknown option `-%c'.\n", optopt);
 				return EXIT_FAILURE;
@@ -29,7 +39,7 @@ int main(int argc, char **argv) {
 	}
 
 	if(argc - optind != 2) {
-		printf("Usage: %s input.pdf output.pdf\n", argv[0]);
+		printHelp(argv[0]);
 		return EXIT_FAILURE;
 	}
 
