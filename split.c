@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <wait.h>
+#include <fcntl.h>
 #include "split.h"
+#include "log.h"
 
 void split_init(Split *split, const char *file) {
 	split->file = file;
@@ -30,13 +32,27 @@ void split_split(Split *split, const char *out) {
 	}
 	buffer[pos-1] = '\0';
 
-	if(fork() == 0) {
+	pid_t pid = fork();
+	if(pid <= -1) {
+		perror("fork: ");
+		exit(1);
+	} else if(pid == 0) {
+		int fd = open("/dev/null", O_WRONLY);
+		dup2(fd, 1);
+		dup2(fd, 2);
+
 		execlp("pdfjam", "pdfjam", "--fitpaper", "true", split->file, buffer, "-o", out, NULL);
-		perror("execl: ");
+		perror("execl pdfjam");
 		exit(1);
 	}
 
-	while(wait(NULL) > 0);
+	int status;
+	waitpid(pid, &status, 0);
+	if(status != 0) {
+		log_error("pdfjam returned %d\n", status);
+	} else {
+		log_debug("pdfjam returned %d\n", status);
+	}
 }
 
 void split_free(Split *split) {
