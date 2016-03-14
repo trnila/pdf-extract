@@ -5,7 +5,7 @@ CFLAGS=-g -Wall -Wextra
 
 all: $(BINARY)
 
-$(BINARY): main.o patterns.o split.o pdf2text.o log.o
+$(BINARY): main.o patterns.o split.o pdf2text.o log.o getline.o
 	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
 
 .PHONY: clean
