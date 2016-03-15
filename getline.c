@@ -1,57 +1,84 @@
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
 #include <malloc.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <errno.h>
 
-typedef struct {
-	char buffer[100];
-	int pos;
-	int len;
+typedef struct Buffer {
+	int fd;
+	char buffer[2048];
+	size_t pos;
+	size_t end;
+	struct Buffer *next;
 } Buffer;
 
-void p(char*msg, char*x, int s, int p) {
-	printf("%s: '", msg);
-	for(int i = s; i < p; i++) {
-		printf("%c", x[i]);
+Buffer *buffers = NULL;
+
+Buffer* getBuffer(int fd) {
+	Buffer **buffer = &buffers;
+	while(*buffer != NULL) {
+		if((*buffer)->fd == fd) {
+			return *buffer;
+		}
 	}
-	printf("'\n");
+
+	// create a new buffer
+	Buffer *newBuffer = (Buffer*) malloc(sizeof(Buffer));
+	newBuffer->pos = newBuffer->end = 0;
+	newBuffer->fd = fd;
+	newBuffer->next = buffers;
+	buffers = newBuffer;
+
+	return newBuffer;
 }
 
-Buffer *buffers = NULL;
 int readline(int fd, char *buf, size_t len) {
-	if(buffers == NULL) {
-		buffers = (Buffer*) malloc(sizeof(Buffer));
-		buffers->pos = buffers->len = 0;
+	if(buf == NULL || len <= 0) {
+		errno = EINVAL;
+		return -1;
 	}
-	Buffer *buffer = buffers;
 
+	Buffer *buffer = getBuffer(fd);
+
+	ssize_t r;
 	do {
-		for(; buffer->pos < buffer->len; buffer->pos++) {
+		size_t start = buffer->pos;
+		for(; buffer->pos < buffer->end; buffer->pos++) {
 			if(buffer->buffer[buffer->pos] == '\n') {
-				memcpy(buf, buffer->buffer, buffer->pos);
-				buf[buffer->pos] = 0;
+				size_t lineLength = buffer->pos - start;
 
-				size_t remaining = buffer->len - buffer->pos - 1;
-				memcpy(buffer->buffer, buffer->buffer + buffer->pos + 1, remaining);
+				// line is greater than provided buffer
+				if(lineLength >= len) {
+					errno = ENOBUFS;
+					return -1;
+				}
 
-				int pos = buffer->pos;
-				buffer->pos = 0;
-				buffer->len -= pos;
-				return pos;
+				// copy line to provided buffer
+				memcpy(buf, buffer->buffer + start, lineLength);
+				buf[lineLength] = 0;
+				buffer->pos++;
+
+				return (int) lineLength;
 			}
 		}
+		
 
-	//	printf(">>%s<<\n", buffer->buffer);
-
-		ssize_t r = read(fd, buffer->buffer + buffer->pos, sizeof(buffer->buffer) - buffer->pos);
-		if(r == 0) {
-			return 0;
-		} else {
-			buffer->len += r;
+		size_t remaining = buffer->end - start;
+		size_t bufferRemaining = sizeof(buffer->buffer) - remaining - 1;
+		if(bufferRemaining <= 0) {
+			errno = ENOBUFS;
+			return -1;
 		}
-	} while(1);
+
+		// move part of line to the beginning of the buffer
+		memmove(buffer->buffer, buffer->buffer + start, remaining);
+
+		// read-append another chunk to the buffer
+		r = read(fd, buffer->buffer + remaining, bufferRemaining);
+		buffer->end = remaining + r;
+		buffer->pos = 0;
+	} while(r > 0);
+
+	return 0;
 }
